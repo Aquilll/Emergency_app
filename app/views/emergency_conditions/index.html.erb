@@ -1,0 +1,126 @@
+
+<!-- jQuery library -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+ 
+<!-- font awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+
+
+<!-- maps initialization -->
+    <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCgHkgJqB7lUIoucInYhQkPeW6l8RTgXdE&callback=initMap">
+    </script>
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+
+  <title>Emergency App</title>
+
+</head>
+<body>
+
+
+<p id="notice"><%= notice %></p>
+
+<h1>Active Emergency Conditions</h1>
+<%= link_to 'New Emergency Condition', new_emergency_condition_path %> <br>
+<a id="all" href="/emergency_conditions?type=all"> All Emergencies</a> |
+<a  id="active" href="/emergency_conditions?type=active">Active Emergencies</a> |
+<a  id="accepted" href="/emergency_conditions?type=accepted">Accepted Emergencies</a>
+<div class="row">
+
+  <%if @emergency_conditions.size == 0%> 
+  <br><br>
+  <h1> &nbsp;&nbsp; No Results Found!</h1>
+  <% end %>
+    <% @emergency_conditions.each do |emergency|%>
+  <div class="card col-md-4">
+    <div class="card-header">
+    <%= emergency.emergency_type %>
+    <% if emergency.accepted? %> 
+      <a style="float:right" href="/emergency_conditions/<%=emergency.id.to_s%>/cancel_emergency">Cancel</a>
+    <%elsif emergency.cancelled?%>
+ <a style="float:right" href="#">Cancelled</a>
+    <%else%>
+ <a style="float:right" href="/emergency_conditions/<%=emergency.id.to_s%>/accept_emergency">Accept</a>
+    <%end%>
+    </div>
+    <div class="card-block">
+      <h4 class="card-title">
+      Started at: <%= emergency.created_at.strftime("%d %b %Y") %>
+      <i style="float:right" onClick="showMap(<%= emergency.emergency_location.latitude %>, <%= emergency.emergency_location.longitude %>)"
+       class="fa fa-map-marker"
+      ></i>
+      </h4>
+      <h6 class="card-text"><%= distance_of_time_in_words(emergency.created_at,Time.now) %> ago</h6>
+      <p class="card-text"><%= emergency.address %>  <br>  <%= emergency.phone_number %> 
+       <%= emergency.pincode %> </p>
+      <a href="#" class="card-link">
+        <% if emergency.pending %>
+        <i class="fa fa-spinner fa-spin" style="font-size:24px"></i> <span style="color:green">Pending</span> &nbsp;<i class="fa fa-ambulance"></i> &nbsp;
+        <i class="fa fa-car"></i>&nbsp;
+        <i class="fa fa-truck"></i>
+        <% elsif emergency.accepted? %>
+        <div class="red" style="color:red">Accepted
+          <%= distance_of_time_in_words(emergency.accepted_at,Time.now) %> ago
+        </div>
+        <%end%>
+      </a>
+    </div>
+  </div>
+    <% end %>
+</div>
+<br>
+
+
+<input type="hidden" id="startLat">
+<input type="hidden" id="startLon">
+<h3>You are here</h3>
+<div id="map"></div>
+</body>
+</html>
+
+<script>
+
+
+  var geoSuccess = function(position) {
+    var startPos = position;
+    document.getElementById('startLat').innerHTML = startPos.coords.latitude;
+    document.getElementById('startLon').innerHTML = startPos.coords.longitude;
+    showMap(startPos.coords.latitude,
+     startPos.coords.longitude)
+  };
+
+
+  function showMap(lat, lng) {
+    debugger;
+    var uluru = {lat: parseFloat(lat), lng: parseFloat(lng)};
+    var map = new google.maps.Map(document.getElementById('map'), {
+      zoom: 14,
+      center: uluru
+    });
+    var marker = new google.maps.Marker({
+      position: uluru,
+      map: map
+    });   
+  }
+
+    function initMap() {
+      navigator.geolocation.getCurrentPosition(geoSuccess);
+      }
+
+</script>
+    <style>
+       #map {
+        height: 400px;
+        width: 100%;
+       }
+    </style>

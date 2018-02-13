@@ -1,0 +1,25 @@
+<p id="notice"><%= notice %></p>
+
+<h1>Emergency Locations</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th colspan="3"></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @emergency_locations.each do |emergency_location| %>
+      <tr>
+        <td><%= link_to 'Show', emergency_location %></td>
+        <td><%= link_to 'Edit', edit_emergency_location_path(emergency_location) %></td>
+        <td><%= link_to 'Destroy', emergency_location, method: :delete, data: { confirm: 'Are you sure?' } %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<br>
+
+<%= link_to 'New Emergency Location', new_emergency_location_path %>

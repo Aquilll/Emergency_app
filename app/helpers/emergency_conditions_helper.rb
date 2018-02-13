@@ -1,0 +1,2 @@
+module EmergencyConditionsHelper
+end

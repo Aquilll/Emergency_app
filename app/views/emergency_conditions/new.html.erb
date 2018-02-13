@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+
+	<title>Emergency App</title>
+
+    <style>
+       #map {
+        height: 400px;
+        width: 100%;
+       }
+    </style>
+
+</head>
+<body>
+<div style="margin-left:25px">
+<h3>New Emergency Condition</h3>
+<%= link_to 'Back', emergency_conditions_path %>
+</div>
+<div class="row" style="margin-left:25px">
+
+<div class="col-md-3">
+
+<form class="needs-validation" novalidate>
+<p class="h5 text-center mb-4"><a href="/emergency_conditions/new">New Emergency</a></p>
+<input type="hidden" id="startLat">
+<input type="hidden" id="startLon">
+
+<div class="md-form">
+<select class="form-control" id="emergency_type" name="emergency_type">
+<% EmergencyCondition.emergency_types.each do |k,v| %>
+  <option value='<%v%>'><%=k%></option>
+<%end%>
+</select>
+</div>
+
+<div class="md-form">
+<input class="form-control" id="name" type="text" placeholder="name"></input>
+</div>
+
+<div class="md-form">
+<input  class="form-control" id="phone" type="phone" placeholder="phone"></input>
+</div>
+
+<div class="md-form">
+<input class="form-control" id="address" type="text" placeholder="Address"></input>
+</div>
+
+<div class="md-form">
+<input class="form-control" id="landmark" type="text" placeholder="landmark"></input>
+</div>
+
+<div class="md-form">
+<input class="form-control" id="pincode" type="number" placeholder="pincode"></input>
+</div>
+
+<div class="md-form">
+Send alert to
+<div class="form-check form-check-inline">
+<input type="radio" id="ambulance" name="emergency_for" checked="checked" value="ambulance"> Ambulance
+</div>
+<div class="form-check form-check-inline">
+<input  type="radio" id="police" name="emergency_for" value="police"> Police
+</div>
+<div class="form-check form-check-inline">
+<input  type="radio" id="fire" name="emergency_for" value="fire"> Fire
+</div>
+</div>
+
+<input type="button" class="btn btn-danger btn-lg" onClick="submitForm()" value="start emergency">
+
+</form>
+
+</div>
+
+<div class="col-md-1 vl"></div>
+
+<div class="col-md-8">
+<u><a style="margin-left:600px" href="/emergency_conditions">All Emergencies</a></u>
+<h3> Active Emergencies </h3>
+<div class="row">
+
+  <%if @last_ten_emergencies.blank?%> 
+  <br><br>
+  <h1> &nbsp;&nbsp; No Emergency Created yet!</h1>
+  <% end %>
+
+<% @last_ten_emergencies&.each do |emergency| %>
+<div class="col-md-1">
+</div>
+	<div class="card col-md-4">
+		<div class="card-header">
+		<%= emergency.emergency_type %>
+		</div>
+	  <div class="card-block">
+	    <h4 class="card-title">
+	    Started at: <%= emergency.created_at.strftime("%d %b %Y") %>
+	    <i style="float:right" onClick="showMap(<%= emergency.emergency_location.latitude %>, <%= emergency.emergency_location.longitude %>)"
+	     class="fa fa-map-marker"
+	    ></i>
+	    </h4>
+
+	    	     
+	    <h6 class="card-text"><%= distance_of_time_in_words(emergency.created_at,Time.now) %></h6>
+	    <p class="card-text"><%= emergency.address %>  <br>  <%= emergency.phone_number %> 
+	     <%= emergency.pincode %> </p>
+	    <a href="#" class="card-link">
+<% if emergency.pending %>
+        <i class="fa fa-spinner fa-spin" style="font-size:24px"></i> <span style="color:green">Pending</span> &nbsp;<i class="fa fa-ambulance"></i> &nbsp;
+        <i class="fa fa-car"></i>&nbsp;
+        <i class="fa fa-truck"></i>
+	    	<% else %>
+	    	<div class="red" style="color:red">
+	    	    <h6 class="card-text">Accepted: <%= distance_of_time_in_words(emergency.created_at,Time.now) %></h6>
+	    	</div>
+	    	<%end%>
+	    </a>
+	  </div>
+	</div>
+<% end %>
+</div>
+</div>
+
+</div>
+
+<h3>You are here</h3>
+<div id="map"></div>
+
+</body>
+</html>
+
+<!-- jQuery library -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+ 
+<!-- font awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+<!-- maps initialization -->
+    <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCgHkgJqB7lUIoucInYhQkPeW6l8RTgXdE&callback=initMap">
+    </script>
+
+<script>
+
+  var geoSuccess = function(position) {
+    var startPos = position;
+    document.getElementById('startLat').innerHTML = startPos.coords.latitude;
+    document.getElementById('startLon').innerHTML = startPos.coords.longitude;
+    showMap(startPos.coords.latitude,
+     startPos.coords.longitude)
+  };
+
+  function showMap(lat, lng) {
+  	debugger;
+    var uluru = {lat: parseFloat(lat), lng: parseFloat(lng)};
+    var map = new google.maps.Map(document.getElementById('map'), {
+      zoom: 14,
+      center: uluru
+    });
+    var marker = new google.maps.Marker({
+      position: uluru,
+      map: map
+    });  	
+  }
+
+    function initMap() {
+  		navigator.geolocation.getCurrentPosition(geoSuccess);
+      }
+
+function empty( val ) {
+
+    // test results
+    //---------------
+    // []        true, empty array
+    // {}        true, empty object
+    // null      true
+    // undefined true
+    // ""        true, empty string
+    // ''        true, empty string
+    // 0         false, number
+    // true      false, boolean
+    // false     false, boolean
+    // Date      false
+    // function  false
+
+        if (val === undefined)
+        return true;
+
+    if (typeof (val) == 'function' || typeof (val) == 'number' || typeof (val) == 'boolean' || Object.prototype.toString.call(val) === '[object Date]')
+        return false;
+
+    if (val == null || val.length === 0)        // null or 0 length array
+        return true;
+
+    if (typeof (val) == "object") {
+        // empty object
+
+        var r = true;
+
+        for (var f in val)
+            r = false;
+
+        return r;
+    }
+
+    return false;
+}
+
+
+phoneFormat = function(inputtxt)
+{
+  var phoneno = /^\d{10,15}$/;
+  if((inputtxt.match(phoneno)))
+        {
+      return true;
+        }
+      else
+        {
+        return false;
+        }
+}
+
+allFieldsPresent = function() {
+		var selected_emergency_type = $('#emergency_type option:selected').text();
+		var name = $('#name').val();
+		var phone = $('#phone').val();
+		var address = $('#address').val();
+		var landmark = $('#landmark').val();
+		var pincode = $('#pincode').val();
+		var emergency_for = $('input[name=emergency_for]:checked').val();
+
+		string = ""
+	if(empty(selected_emergency_type)){
+		string += "\nemergency type is required";
+	}
+
+	if(empty(name)){
+		string += "\nname is required";
+	}
+
+	if(empty(phone)){
+		string += "\nphone is required";
+	}
+
+	if(empty(address)){
+		string += "\naddress is required";
+	}
+
+	if(empty(landmark)){
+		string += "\nlandmark is required";
+	}
+
+	if(empty(pincode)){
+		string += "\npincode is required";
+	}
+
+	if(empty(emergency_for)){
+		string += "\nSelect your choice for emergency help";
+	}
+
+	if(!empty(phone) && !phoneFormat(phone)){
+		string += "\n Phone number should have atleast ten numbers"
+	}
+
+	return string;
+
+}
+
+validateForm = function() {
+	error_text = allFieldsPresent();
+	if(empty(error_text)){
+		return true;
+	}else{
+		alert(error_text);
+	}
+	return false;
+}
+
+submitForm = function() {
+	if(!validateForm()){
+		return
+	}else {
+		var selected_emergency_type = $('#emergency_type option:selected').text();
+		var name = $('#name').val();
+		var phone = $('#phone').val();
+		var address = $('#address').val();
+		var landmark = $('#landmark').val();
+		var pincode = $('#pincode').val();
+		var emergency_for = $('input[name=emergency_for]:checked').val();
+		debugger;
+
+		var latitude= $('#startLat').text();
+		var longitude= $('#startLon').text();
+
+		var payLoad={
+			emergency_condition: {
+				emergency_type: selected_emergency_type,
+				name: name,
+				phone_number: phone,
+				address: address,
+				landmark: landmark,
+				pincode: pincode,
+				emergency_location_attributes: {
+					latitude: latitude,
+					longitude: longitude
+				}
+			},
+			emergency_for: emergency_for
+		}
+		debugger;
+
+		$.ajax({
+		  type: "POST",
+		  url: "/emergency_conditions",
+		  data: payLoad,
+		  success: successCallback
+		});
+	}
+
+}
+
+successCallback = function(data) {
+	alert("craeted emergency " + JSON.stringify(data));
+}
+
+// window.onload = function() {
+//   var startPos;
+//   var geoSuccess = function(position) {
+//     startPos = position;
+//     document.getElementById('startLat').innerHTML = startPos.coords.latitude;
+//     document.getElementById('startLon').innerHTML = startPos.coords.longitude;
+//   };
+//   navigator.geolocation.getCurrentPosition(geoSuccess);
+// };
+</script>
+
+
+<style>
+
+.vl {
+    border-left: 6px solid green;
+ overflow-y:auto;
+    height:100%;
+}
+
+i {
+  color: red;
+
+  &:visited {
+    color: red;
+  }
+
+  &:hover {
+    color: #ddd;
+    background-color: #df1;
+    cursor;
+  }
+
+}
+
+</style>

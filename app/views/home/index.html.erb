@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Emergency App</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  <style>
+    /* Remove the navbar's default margin-bottom and rounded borders */ 
+    .navbar {
+      margin-bottom: 0;
+      border-radius: 0;
+    }
+    
+    /* Set height of the grid so .sidenav can be 100% (adjust as needed) */
+    .row.content {height: 450px}
+    
+    /* Set gray background color and 100% height */
+    .sidenav {
+      padding-top: 20px;
+      background-color: #f1f1f1;
+      height: 100%;
+    overflow-y: scroll;
+    position: fixed;
+    }
+    
+    /* Set black background color, white text and some padding */
+    footer {
+      background-color: #555;
+      color: white;
+      padding: 15px;
+    }
+    
+    /* On small screens, set height to 'auto' for sidenav and grid */
+    @media screen and (max-width: 767px) {
+      .sidenav {
+        height: auto;
+        padding: 15px;
+      }
+      .row.content {height:auto;} 
+    }
+  </style>
+</head>
+<body>
+
+  
+<div class="container-fluid text-center">
+
+  <div class="row content">
+    <div class="col-sm-2 sidenav">
+      <div class="well">
+        <p><a href="/emergency_conditions?type='all'">All Emergencies</a></p>
+      </div>
+      <div class="well">
+        <p><a href="/emergency_conditions?type='active'">Active Emergencies</a></p>
+      </div>
+    </div>
+    <div class="col-sm-6 text-left"> 
+      <h1>Emergency App</h1>
+      <p>This is an emergency recording and accepting app. This will help users to record the type of emergency they are in. You can also register your self as an emregcny respondent if you wish to. Just register below your device with us, we will inform you in case of emergency. You can be of great help. For Victims or their friends, you can <a href="emergency_conditions/new">Start an Emergency</a> here.</p>
+      <hr>
+		<form>
+		<input type="hidden" id="startLat">
+		<input type="hidden" id="startLon">
+
+		<div>
+		What is the type of vehicle that you have for helping in emergency situation.
+		<input type="radio" id="ambulance" name="emergency_for" checked="checked" value="ambulance"> Ambulance
+		<input type="radio" id="police" name="emergency_for" value="police"> Police Car
+		<input type="radio" id="fire" name="emergency_for" value="fire"> Fire vehicle
+
+		<input type="radio" id="others" name="emergency_for" value="others"> Others
+
+		</div>
+
+		<input class="text-center btn btn-success center-block" type="button" onClick="submitForm()" value="Register Device">
+
+		</form>
+    </div>
+    <div class="col-sm-4 sidenav text-left">
+    	<p>Registered devices</p>
+			<ol class="well">
+			<% @registered_devices.reverse.each do |device| %>
+				<li>
+					Vehicle Type: <%= device.vehicle_type.present? ? device.vehicle_type : "others"%>
+					<% if device.ambulance? %> <i class="fa fa-ambulance"></i>
+				<% elsif device.police? %> <i class="fa fa-car"></i>
+				<% else%><i class="fa fa-truck"></i>
+				<% end%>,
+					position: <%= device.latitude.to_s + " " + device.longitude.to_s %>,
+					created: <%= distance_of_time_in_words(device.created_at,Time.now) + " ago"%>
+				</li>
+				<hr>
+			<% end %>
+			</ol>
+    </div>
+  </div>
+</div>
+
+<footer class="container-fluid text-center">
+  <p>Find me on social media.</p>
+  <a href="https://www.facebook.com/aquil.hussain.77">
+    <i class="fa fa-facebook-official w3-hover-opacity"></i>
+  </a>
+  <!-- <i class="fa fa-snapchat w3-hover-opacity"></i> -->
+  <!-- <i class="fa fa-pinterest-p w3-hover-opacity"></i> -->
+  <a href="https://github.com/Aquilll">
+    <i class="fa fa-github w3-hover-opacity"></i>
+  </a>
+  <a href="https://www.linkedin.com/in/aquil-hussain-191069109/">
+    <i class="fa fa-linkedin w3-hover-opacity"></i>
+  </a>
+  <p>\m/ Life is Awesome \m/</a></p>
+</footer>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- font awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+<!-- jQuery library -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+<!-- Latest compiled JavaScript -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+ 
+
+<script>
+submitForm = function() {
+	var latitude= $('#startLat').text();
+	var longitude= $('#startLon').text();
+
+	var helpingMode = $('input[name=emergency_for]:checked').val();
+
+	var payLoad = {
+		emergency_device: {
+			latitude: latitude + (Math.random() * 100).toFixed(7),
+			longitude: longitude + (Math.random() * 100).toFixed(7),
+			vehicle_type: helpingMode
+		}
+	}
+
+	$.ajax({
+	  type: "POST",
+	  url: "/emergency_device",
+	  data: payLoad,
+	  success: successCallback
+	});
+}
+
+successCallback = function(data) {
+	alert("Registered a new vehicle type. You will be notified when there is an emergency.");
+	window.reload();
+}
+
+window.onload = function() {
+  var startPos;
+  var geoSuccess = function(position) {
+    startPos = position;
+    document.getElementById('startLat').innerHTML = startPos.coords.latitude;
+    document.getElementById('startLon').innerHTML = startPos.coords.longitude;
+  };
+  navigator.geolocation.watchPosition(geoSuccess);
+};
+
+</script>
+
+</body>
+</html>

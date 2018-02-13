@@ -1,0 +1,28 @@
+db:
+  image: postgres:9.6
+  expose:
+    - "5432"
+  environment:
+    POSTGRES_DB: docker
+    POSTGRES_USER: docker
+    POSTGRES_PASSWORD: docker
+web:
+  image: emergency_full_image
+  command: /usr/bin/supervisord -n
+  ports:
+    - "3000:3000"
+  links:
+    - db
+  stdin_open: true
+  tty: false
+  environment:
+    RACK_ENV: development
+    RAILS_ENV: development
+    PG_USER: docker
+    PG_PASSWORD: docker
+    PG_HOST: db
+    TEST_ENV_NUMBER: 1
+    MAX_THREADS: 3
+    WEB_CONCURRENCY: 1
+  volumes:
+    - ./:/emergency
